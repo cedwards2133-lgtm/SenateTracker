@@ -1,0 +1,818 @@
+<title>2026 Senate Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400..800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#000000;
+  --surface:#131313;
+  --surface-2:#1c1c1c;
+  --ink:#f3f4f6;
+  --ink-dim:#8d9199;
+  --border:#2a2a2a;
+  --shadow:rgba(0,0,0,.6);
+
+  /* graded D->R spectrum used for column headers / stat accents */
+  --d:#3b82f6;
+  --d2:#3b78e0;
+  --d3:#3a68b8;
+  --mid:#9aa0aa;
+  --r3:#b85f4e;
+  --r2:#cf4b3c;
+  --r:#e44b3a;
+  --ind:#d4a92e;
+
+  --d-wash:rgba(59,130,246,.14);
+  --d2-wash:rgba(59,120,224,.11);
+  --d3-wash:rgba(58,104,184,.09);
+  --mid-wash:rgba(255,255,255,.05);
+  --r3-wash:rgba(184,95,78,.09);
+  --r2-wash:rgba(207,75,60,.11);
+  --r-wash:rgba(228,75,58,.14);
+  --ind-wash:rgba(212,169,46,.14);
+
+  /* full-strength party fills for candidate bars */
+  --d-solid:#2f66d6;
+  --d-solid-text:#ffffff;
+  --d-idle-bg:rgba(59,130,246,.14);
+  --d-idle-text:#8fb4f5;
+  --d-idle-border:rgba(59,130,246,.35);
+
+  --r-solid:#d63b2f;
+  --r-solid-text:#ffffff;
+  --r-idle-bg:rgba(214,59,47,.14);
+  --r-idle-text:#f0968b;
+  --r-idle-border:rgba(214,59,47,.35);
+
+  --i-solid:#c99a26;
+  --i-solid-text:#171205;
+  --i-idle-bg:rgba(201,154,38,.16);
+  --i-idle-text:#e3c26e;
+  --i-idle-border:rgba(201,154,38,.4);
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  padding:28px 20px 60px;
+}
+.wrap{max-width:1280px;margin:0 auto;}
+
+header.masthead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:20px;
+  flex-wrap:wrap;
+  border-bottom:2px solid var(--ink);
+  padding-bottom:14px;
+  margin-bottom:22px;
+}
+h1{
+  font-family:'Source Serif 4',Georgia,serif;
+  font-weight:700;
+  font-size:2.3rem;
+  letter-spacing:-0.01em;
+  margin:0;
+  text-wrap:balance;
+}
+.eyebrow{
+  font-size:.72rem;
+  font-weight:600;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+  color:var(--ink-dim);
+  margin:0 0 4px;
+}
+.masthead-right{text-align:right;}
+.masthead-note{
+  font-size:.82rem;
+  color:var(--ink-dim);
+  max-width:340px;
+  line-height:1.45;
+}
+.reset-btn{
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:.75rem;
+  font-weight:600;
+  color:var(--ink-dim);
+  background:none;
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:6px 10px;
+  cursor:pointer;
+  margin-top:8px;
+}
+.reset-btn:hover{border-color:var(--ink-dim);color:var(--ink);}
+.reset-btn:focus-visible{outline:2px solid var(--d2);outline-offset:2px;}
+
+/* Scoreboard */
+.scoreboard{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:22px 24px 20px;
+  box-shadow:0 2px 10px var(--shadow);
+  margin-bottom:30px;
+}
+.stat-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:18px;
+  margin-bottom:20px;
+}
+.stat{border-left:3px solid var(--stat-color,var(--mid));padding-left:12px;}
+.stat .num{
+  font-family:'IBM Plex Mono',monospace;
+  font-variant-numeric:tabular-nums;
+  font-size:2.1rem;
+  font-weight:600;
+  line-height:1;
+  color:var(--stat-color,var(--ink));
+}
+.stat .label{
+  font-size:.72rem;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-dim);
+  margin-top:5px;
+}
+.stat .sub{
+  font-size:.78rem;
+  color:var(--ink-dim);
+  margin-top:3px;
+}
+.stat .sub.clinched{color:var(--stat-color,var(--ink));font-weight:600;}
+
+.bar-wrap{position:relative;padding-top:22px;padding-bottom:26px;}
+.bar{
+  display:flex;
+  width:100%;
+  height:34px;
+  border-radius:7px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+}
+.seg{height:100%;transition:width .35s ease;}
+.seg.uncalled{
+  background:repeating-linear-gradient(135deg,var(--surface-2),var(--surface-2) 6px,var(--border) 6px,var(--border) 12px);
+}
+.threshold{
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:0;
+  border-left:2px dashed var(--ink-dim);
+}
+.threshold .tag{
+  position:absolute;
+  top:-20px;
+  right:4px;
+  left:auto;
+  font-size:.68rem;
+  font-weight:600;
+  color:var(--ink-dim);
+  white-space:nowrap;
+  font-family:'IBM Plex Mono',monospace;
+}
+.threshold.below .tag{
+  top:auto;
+  bottom:4px;
+  right:auto;
+  left:16px;
+}
+.bar-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  margin-top:16px;
+  font-size:.72rem;
+  color:var(--ink-dim);
+}
+.bar-legend span{display:inline-flex;align-items:center;gap:5px;}
+.swatch{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+/* Columns */
+.columns{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+.column{
+  flex:1 1 160px;
+  min-width:160px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.col-head{
+  border-radius:8px;
+  padding:8px 10px;
+  background:var(--col-wash);
+  border:1px solid var(--border);
+}
+.col-head .name{
+  font-size:.74rem;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--col-color);
+}
+.col-head .count{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.68rem;
+  color:var(--ink-dim);
+  margin-top:1px;
+}
+
+.race-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:9px 10px 10px;
+  box-shadow:0 1px 3px var(--shadow);
+}
+.race-state{
+  font-family:'Source Serif 4',Georgia,serif;
+  font-weight:600;
+  font-size:.92rem;
+  margin-bottom:6px;
+}
+.race-candidates{display:flex;flex-direction:column;gap:5px;}
+.cand{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  width:100%;
+  text-align:left;
+  font-family:'IBM Plex Sans',sans-serif;
+  font-size:.78rem;
+  font-weight:500;
+  color:var(--ink);
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:6px 8px;
+  cursor:pointer;
+  transition:background .12s ease,border-color .12s ease,opacity .12s ease;
+}
+.cand:hover{filter:brightness(1.12);}
+.cand:focus-visible{outline:2px solid #fff;outline-offset:1px;}
+.name-col{display:flex;flex-direction:column;gap:1px;}
+.name-col .note{
+  font-size:.65rem;
+  font-weight:600;
+  letter-spacing:.02em;
+  opacity:.75;
+  font-style:italic;
+}
+.cand .p{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.66rem;
+  font-weight:700;
+  padding:1px 5px;
+  border-radius:4px;
+  flex:none;
+  opacity:.85;
+}
+
+/* idle: bar already tinted the party color */
+.cand[data-party="D"]{background:var(--d-idle-bg);border-color:var(--d-idle-border);color:var(--d-idle-text);}
+.cand[data-party="R"]{background:var(--r-idle-bg);border-color:var(--r-idle-border);color:var(--r-idle-text);}
+.cand[data-party="I"]{background:var(--i-idle-bg);border-color:var(--i-idle-border);color:var(--i-idle-text);}
+
+/* called: solid party-color fill */
+.cand.called[data-party="D"]{background:var(--d-solid);border-color:var(--d-solid);color:var(--d-solid-text);}
+.cand.called[data-party="R"]{background:var(--r-solid);border-color:var(--r-solid);color:var(--r-solid-text);}
+.cand.called[data-party="I"]{background:var(--i-solid);border-color:var(--i-solid);color:var(--i-solid-text);}
+.cand.faded{opacity:.35;}
+
+.race-card.decided{border-color:var(--decided-color);}
+.race-card.decided .race-state{color:var(--decided-color);}
+
+footer{
+  margin-top:34px;
+  font-size:.72rem;
+  color:var(--ink-dim);
+  text-align:center;
+}
+
+/* Odds additions */
+.race-state{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+.race-pct{
+  font-family:'IBM Plex Mono',monospace;
+  font-variant-numeric:tabular-nums;
+  font-size:.66rem;
+  font-weight:500;
+  color:var(--ink-dim);
+  white-space:nowrap;
+  flex:none;
+}
+.race-pct.src-manual,.race-pct.src-override{font-style:italic;opacity:.8;}
+.odds-note{
+  font-size:.72rem;
+  color:var(--ink-dim);
+  margin:-16px 0 16px;
+  line-height:1.45;
+}
+.odds-note time{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
+
+@media (max-width:640px){
+  h1{font-size:1.7rem;}
+  .masthead-right{text-align:left;}
+  .column{flex:1 1 100%;}
+}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Class II &middot; November 3, 2026</p>
+      <h1>2026 Senate Tracker</h1>
+    </div>
+    <div class="masthead-right">
+      <p class="masthead-note">34 Democratic and 31 Republican seats aren't on the ballot this cycle. Of the 35 races below, Democrats need 17 to reach a 51-seat majority; Republicans need 19 to reach 50 with the vice-presidential tiebreaker.</p>
+      <button class="reset-btn" id="resetBtn">Reset all calls</button>
+    </div>
+  </header>
+
+  <div class="scoreboard">
+    <div class="stat-row">
+      <div class="stat" style="--stat-color:var(--d)">
+        <div class="num" id="statD">34</div>
+        <div class="label">Democrats</div>
+        <div class="sub" id="subD">17 more to clinch 51</div>
+      </div>
+      <div class="stat" style="--stat-color:var(--r)">
+        <div class="num" id="statR">31</div>
+        <div class="label">Republicans</div>
+        <div class="sub" id="subR">19 more to clinch 50</div>
+      </div>
+      <div class="stat" id="statIndWrap" style="--stat-color:var(--ind);display:none">
+        <div class="num" id="statInd">0</div>
+        <div class="label">Independent</div>
+        <div class="sub">caucus undecided</div>
+      </div>
+      <div class="stat" style="--stat-color:var(--mid)">
+        <div class="num" id="statUncalled">35</div>
+        <div class="label">Uncalled races</div>
+        <div class="sub" id="subUncalled">of 35 in play</div>
+      </div>
+    </div>
+
+    <div class="bar-wrap">
+      <div class="bar" id="bar"></div>
+      <div class="threshold below" style="left:50%" id="thresh50"><span class="tag">50 &middot; R + VP</span></div>
+      <div class="threshold" style="left:51%" id="thresh51"><span class="tag">51 &middot; D outright</span></div>
+    </div>
+    <div class="bar-legend">
+      <span><i class="swatch" style="background:var(--d)"></i>Democratic (safe + called)</span>
+      <span><i class="swatch" style="background:var(--ind)"></i>Independent</span>
+      <span><i class="swatch" style="background:var(--surface-2);border:1px solid var(--border)"></i>Uncalled</span>
+      <span><i class="swatch" style="background:var(--r)"></i>Republican (safe + called)</span>
+    </div>
+  </div>
+
+  <div class="odds-note" id="oddsNote"></div>
+
+  <div class="columns" id="columns"></div>
+
+  <footer>Candidate lineups reflect nominees reported as of late September 2026 and may shift before November 3. Click a name to call a race &middot; click again to undo.</footer>
+</div>
+
+<script>
+/* ================= ODDS CONFIG — edit freely ================= */
+const ODDS_CONFIG = {
+  // Lower bound of the Democratic win probability for each rating.
+  // Checked top to bottom; the first one the probability meets wins.
+  thresholds: [
+    {key:'lockD',   min:0.90},  // 90%+
+    {key:'likelyD', min:0.75},  // 75-90%
+    {key:'leanD',   min:0.60},  // 60-75%
+    {key:'tossup',  min:0.40},  // 40-60%
+    {key:'leanR',   min:0.25},  // 25-40% D
+    {key:'likelyR', min:0.10},  // 10-25% D
+    {key:'lockR',   min:0.00},  // under 10% D
+  ],
+  useOdds: true,       // false = ignore odds, use hand-set `cat` everywhere
+  showPct: true,       // show "D 62%" on each race card
+  maxSpread: 0.10,     // use bid/ask midpoint only when spread <= 10c, else last trade
+  live: {
+    enabled: false,    // Option A: re-fetch Kalshi in the browser on page load
+    baseUrl: 'https://api.elections.kalshi.com/trade-api/v2', // or your proxy URL
+    timeoutMs: 8000,
+  },
+};
+
+/* KALSHI:BEGIN - state -> Kalshi series ticker (JSON). null = no confirmed market yet.
+   `python scripts/update_odds.py --discover` checks the null ones against the API and fills in any it can verify. */
+const KALSHI_SERIES = {
+  "OR": null,
+  "NM": null,
+  "CO": null,
+  "IL": null,
+  "VA": null,
+  "NJ": null,
+  "DE": null,
+  "RI": null,
+  "MA": null,
+  "NC": "SENATENC",
+  "GA": "SENATEGA",
+  "MN": "SENATEMN",
+  "NH": "SENATENH",
+  "MI": "SENATEMI",
+  "OH": "SENATEOHS",
+  "ME": "SENATEME",
+  "TX": "SENATETX",
+  "AK": "SENATEAK",
+  "IA": "SENATEIA",
+  "KS": "SENATEKS",
+  "NE": "SENATENE",
+  "FL": "SENATEFLS",
+  "SC": "SENATESC",
+  "SD": null,
+  "ID": null,
+  "MT": null,
+  "WY": null,
+  "OK": null,
+  "AR": null,
+  "LA": "SENATELA",
+  "AL": null,
+  "MS": null,
+  "TN": null,
+  "KY": null,
+  "WV": null
+};
+/* KALSHI:END */
+
+/* ODDS:BEGIN - written by scripts/update_odds.py, don't edit by hand */
+const ODDS_DATA = {"updated": null, "source": "snapshot", "races": {}};
+/* ODDS:END */
+/* ============================================================= */
+
+const CATEGORIES = [
+  {key:'lockD',   label:'Lock D',    color:'var(--d)',  wash:'var(--d-wash)'},
+  {key:'likelyD', label:'Likely D',  color:'var(--d2)', wash:'var(--d2-wash)'},
+  {key:'leanD',   label:'Lean D',    color:'var(--d3)', wash:'var(--d3-wash)'},
+  {key:'tossup',  label:'Toss-Up',   color:'var(--mid)',wash:'var(--mid-wash)'},
+  {key:'leanR',   label:'Lean R',    color:'var(--r3)', wash:'var(--r3-wash)'},
+  {key:'likelyR', label:'Likely R',  color:'var(--r2)', wash:'var(--r2-wash)'},
+  {key:'lockR',   label:'Lock R',    color:'var(--r)',  wash:'var(--r-wash)'},
+];
+
+// `cat` is your hand-set rating: used when a state has no market or the fetch fails.
+// Add override:'tossup' (any category key) to a race to pin it regardless of odds.
+const RACES = [
+  // Lock D
+  {id:'OR',cat:'lockD',state:'Oregon',cands:[{n:'Jeff Merkley',p:'D'},{n:'David Brock Smith',p:'R'}]},
+  {id:'NM',cat:'lockD',state:'New Mexico',cands:[{n:'Ben Ray Luján',p:'D'},{n:'Larry Marker',p:'R'}]},
+  {id:'CO',cat:'lockD',state:'Colorado',cands:[{n:'John Hickenlooper',p:'D'},{n:'Mark Baisley',p:'R'}]},
+  {id:'IL',cat:'lockD',state:'Illinois',cands:[{n:'Juliana Stratton',p:'D'},{n:'Don Tracy',p:'R'}]},
+  {id:'VA',cat:'lockD',state:'Virginia',cands:[{n:'Mark Warner',p:'D'},{n:'Bert Mizusawa',p:'R'}]},
+  {id:'NJ',cat:'lockD',state:'New Jersey',cands:[{n:'Cory Booker',p:'D'},{n:'Justin Murphy',p:'R'}]},
+  {id:'DE',cat:'lockD',state:'Delaware',cands:[{n:'Chris Coons',p:'D'},{n:'Michael Katz',p:'R'}]},
+  {id:'RI',cat:'lockD',state:'Rhode Island',cands:[{n:'Jack Reed',p:'D'},{n:'Raymond McKay',p:'R'}]},
+  {id:'MA',cat:'lockD',state:'Massachusetts',cands:[{n:'Ed Markey',p:'D'},{n:'John Deaton',p:'R'}]},
+  // Likely D
+  {id:'NC',cat:'likelyD',state:'North Carolina',cands:[{n:'Roy Cooper',p:'D'},{n:'Michael Whatley',p:'R'}]},
+  {id:'GA',cat:'likelyD',state:'Georgia',cands:[{n:'Jon Ossoff',p:'D'},{n:'Mike Collins',p:'R'}]},
+  {id:'MN',cat:'likelyD',state:'Minnesota',cands:[{n:'Peggy Flanagan',p:'D'},{n:'Michele Tafoya',p:'R'}]},
+  {id:'NH',cat:'likelyD',state:'New Hampshire',cands:[{n:'Chris Pappas',p:'D'},{n:'John E. Sununu',p:'R'}]},
+  // Lean D
+  {id:'MI',cat:'leanD',state:'Michigan',cands:[{n:'Abdul El-Sayed',p:'D'},{n:'Mike Rogers',p:'R'}]},
+  // Toss-Up
+  {id:'OH',cat:'tossup',state:'Ohio',cands:[{n:'Sherrod Brown',p:'D'},{n:'Jon Husted',p:'R'}]},
+  {id:'ME',cat:'tossup',state:'Maine',cands:[{n:'Troy Jackson',p:'D'},{n:'Susan Collins',p:'R'}]},
+  {id:'TX',cat:'tossup',state:'Texas',cands:[{n:'James Talarico',p:'D'},{n:'Ken Paxton',p:'R'}]},
+  {id:'AK',cat:'tossup',state:'Alaska',cands:[{n:'Mary Peltola',p:'D'},{n:'Dan Sullivan',p:'R'}]},
+  {id:'IA',cat:'tossup',state:'Iowa',cands:[{n:'Josh Turek',p:'D'},{n:'Ashley Hinson',p:'R'}]},
+  // Lean R
+  {id:'KS',cat:'leanR',state:'Kansas',cands:[{n:'Adam Hamilton',p:'D'},{n:'Roger Marshall',p:'R'}]},
+  {id:'NE',cat:'leanR',state:'Nebraska',cands:[{n:'Dan Osborn',p:'I',caucus:'D',note:'Caucuses with Democrats'},{n:'Pete Ricketts',p:'R'}]},
+  // Likely R
+  {id:'FL',cat:'likelyR',state:'Florida',cands:[{n:'Angie Nixon',p:'D'},{n:'Ashley Moody',p:'R'}]},
+  {id:'SC',cat:'likelyR',state:'South Carolina',cands:[{n:'Annie Andrews',p:'D'},{n:'Darline Graham',p:'R'}]},
+  {id:'SD',cat:'likelyR',state:'South Dakota',cands:[{n:'Brian Bengs',p:'I',caucus:'D',note:'Caucuses with Democrats'},{n:'Mike Rounds',p:'R'}]},
+  // Lock R
+  {id:'ID',cat:'lockR',state:'Idaho',cands:[{n:'Jim Risch',p:'R'},{n:'Todd Achilles',p:'I'},{n:'Natalie Fleming',p:'I'}]},
+  {id:'MT',cat:'lockR',state:'Montana',cands:[{n:'Alani Bankhead',p:'D'},{n:'Kurt Alme',p:'R'},{n:'Seth Bodnar',p:'I'}]},
+  {id:'WY',cat:'lockR',state:'Wyoming',cands:[{n:'James W. Byrd',p:'D'},{n:'Harriet Hageman',p:'R'}]},
+  {id:'OK',cat:'lockR',state:'Oklahoma',cands:[{n:"N'Kiyla Jasmine Thomas",p:'D'},{n:'Kevin Hern',p:'R'}]},
+  {id:'AR',cat:'lockR',state:'Arkansas',cands:[{n:'Hallie Shoffner',p:'D'},{n:'Tom Cotton',p:'R'}]},
+  {id:'LA',cat:'lockR',state:'Louisiana',cands:[{n:'Jamie Davis',p:'D'},{n:'Julia Letlow',p:'R'}]},
+  {id:'AL',cat:'lockR',state:'Alabama',cands:[{n:'Everett Wess',p:'D'},{n:'Barry Moore',p:'R'}]},
+  {id:'MS',cat:'lockR',state:'Mississippi',cands:[{n:'Scott Colom',p:'D'},{n:'Cindy Hyde-Smith',p:'R'}]},
+  {id:'TN',cat:'lockR',state:'Tennessee',cands:[{n:'Marquita Bradshaw',p:'D'},{n:'Bill Hagerty',p:'R'}]},
+  {id:'KY',cat:'lockR',state:'Kentucky',cands:[{n:'Charles Booker',p:'D'},{n:'Andy Barr',p:'R'}]},
+  {id:'WV',cat:'lockR',state:'West Virginia',cands:[{n:'Rachel Fetty Anderson',p:'D'},{n:'Shelley Moore Capito',p:'R'}]},
+];
+
+const BASE_D = 34, BASE_R = 31, TOTAL_RACES = RACES.length;
+const STORE_KEY = 'senate2026calls';
+
+function loadCalls(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveCalls(calls){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(calls)); }catch(e){}
+}
+let calls = loadCalls(); // { raceId: candidateIndex }
+
+const columnsEl = document.getElementById('columns');
+const CAT_KEYS = CATEGORIES.map(c=>c.key);
+RACES.forEach(r=>{ r.manualCat = r.cat; });
+
+function catFromProb(d){
+  for(const t of ODDS_CONFIG.thresholds){ if(d >= t.min) return t.key; }
+  return ODDS_CONFIG.thresholds[ODDS_CONFIG.thresholds.length-1].key;
+}
+
+function applyOdds(odds){
+  RACES.forEach(r=>{
+    const o = odds && odds.races ? odds.races[r.id] : null;
+    r.dProb = (o && typeof o.d === 'number') ? o.d : null;
+    if(r.override && CAT_KEYS.includes(r.override)){ r.cat = r.override; r.ratingSource = 'override'; }
+    else if(ODDS_CONFIG.useOdds && r.dProb !== null){ r.cat = catFromProb(r.dProb); r.ratingSource = 'odds'; }
+    else { r.cat = r.manualCat; r.ratingSource = 'manual'; }
+  });
+}
+
+function pctLabel(r){
+  if(r.ratingSource === 'odds') return {text:`D ${Math.round(r.dProb*100)}%`, title:'Kalshi Democratic win probability'};
+  if(r.ratingSource === 'override') return {text:'override', title: r.dProb!==null ? `Manual override (Kalshi: D ${Math.round(r.dProb*100)}%)` : 'Manual override'};
+  return {text:'manual', title:'No Kalshi odds for this race; using hand-set rating'};
+}
+
+function buildColumns(){
+columnsEl.innerHTML = '';
+CATEGORIES.forEach(cat=>{
+  const races = RACES.filter(r=>r.cat===cat.key);
+  const col = document.createElement('div');
+  col.className = 'column';
+  col.innerHTML = `<div class="col-head" style="--col-wash:${cat.wash};--col-color:${cat.color}">
+      <div class="name">${cat.label}</div>
+      <div class="count">${races.length} race${races.length===1?'':'s'}</div>
+    </div>`;
+  races.forEach(r=>{
+    const card = document.createElement('div');
+    card.className = 'race-card';
+    card.dataset.race = r.id;
+    const state = document.createElement('div');
+    state.className = 'race-state';
+    const stateName = document.createElement('span');
+    stateName.textContent = r.state;
+    state.appendChild(stateName);
+    if(ODDS_CONFIG.showPct){
+      const lab = pctLabel(r);
+      const pct = document.createElement('span');
+      pct.className = 'race-pct src-' + r.ratingSource;
+      pct.textContent = lab.text;
+      pct.title = lab.title;
+      state.appendChild(pct);
+    }
+    card.appendChild(state);
+    const list = document.createElement('div');
+    list.className = 'race-candidates';
+    r.cands.forEach((c,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'cand';
+      btn.dataset.party = c.p;
+      const nameCol = c.note
+        ? `<span class="name-col"><span>${c.n}</span><span class="note">${c.note}</span></span>`
+        : `<span>${c.n}</span>`;
+      btn.innerHTML = `${nameCol}<span class="p">${c.p}</span>`;
+      btn.addEventListener('click', ()=>{
+        if(calls[r.id] === i){ delete calls[r.id]; }
+        else{ calls[r.id] = i; }
+        saveCalls(calls);
+        render();
+      });
+      list.appendChild(btn);
+    });
+    card.appendChild(list);
+    col.appendChild(card);
+  });
+  columnsEl.appendChild(col);
+});
+}
+
+function partyColorVar(p){
+  return p==='D' ? 'var(--d-solid)' : p==='R' ? 'var(--r-solid)' : 'var(--i-solid)';
+}
+
+function render(){
+  let calledD=0, calledR=0, calledI=0;
+  RACES.forEach(r=>{
+    const card = columnsEl.querySelector(`.race-card[data-race="${r.id}"]`);
+    const idx = calls[r.id];
+    const buttons = card.querySelectorAll('.cand');
+    buttons.forEach((btn,i)=>{
+      btn.classList.toggle('called', idx===i);
+      btn.classList.toggle('faded', idx!==undefined && idx!==i);
+    });
+    if(idx!==undefined){
+      const cand = r.cands[idx];
+      const p = cand.p;
+      const bucket = cand.caucus || p;
+      card.classList.add('decided');
+      card.style.setProperty('--decided-color', partyColorVar(p));
+      if(bucket==='D') calledD++;
+      else if(bucket==='R') calledR++;
+      else calledI++;
+    } else {
+      card.classList.remove('decided');
+    }
+  });
+
+  const totalD = BASE_D + calledD;
+  const totalR = BASE_R + calledR;
+  const totalI = calledI;
+  const uncalled = TOTAL_RACES - calledD - calledR - calledI;
+
+  document.getElementById('statD').textContent = totalD;
+  document.getElementById('statR').textContent = totalR;
+  document.getElementById('statUncalled').textContent = uncalled;
+  document.getElementById('subUncalled').textContent = uncalled===0 ? 'all races called' : `of ${TOTAL_RACES} in play`;
+
+  const indWrap = document.getElementById('statIndWrap');
+  if(totalI>0){
+    indWrap.style.display='';
+    document.getElementById('statInd').textContent = totalI;
+  } else {
+    indWrap.style.display='none';
+  }
+
+  const subD = document.getElementById('subD');
+  const needD = 51 - totalD;
+  if(needD<=0){ subD.textContent='Majority clinched'; subD.classList.add('clinched'); }
+  else { subD.textContent = `${needD} more to clinch 51`; subD.classList.remove('clinched'); }
+
+  const subR = document.getElementById('subR');
+  const needR = 50 - totalR;
+  if(needR<=0){ subR.textContent='Control clinched (w/ VP)'; subR.classList.add('clinched'); }
+  else { subR.textContent = `${needR} more to clinch 50`; subR.classList.remove('clinched'); }
+
+  const bar = document.getElementById('bar');
+  bar.innerHTML = '';
+  const segs = [
+    {n:BASE_D, color:'var(--d)'},
+    {n:calledD, color:'var(--d)'},
+    {n:calledI, color:'var(--ind)'},
+    {n:uncalled, color:null, cls:'uncalled'},
+    {n:calledR, color:'var(--r)'},
+    {n:BASE_R, color:'var(--r)'},
+  ];
+  segs.forEach(s=>{
+    if(s.n<=0) return;
+    const d = document.createElement('div');
+    d.className = 'seg' + (s.cls ? ' '+s.cls : '');
+    d.style.width = s.n + '%';
+    if(s.color) d.style.background = s.color;
+    bar.appendChild(d);
+  });
+}
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(confirm('Clear every called race and reset the tracker?')){
+    calls = {};
+    saveCalls(calls);
+    render();
+  }
+});
+
+function renderOddsNote(odds, extra){
+  const el = document.getElementById('oddsNote');
+  const n = {odds:0, override:0, manual:0};
+  RACES.forEach(r=>n[r.ratingSource]++);
+  const parts = [];
+  if(odds && odds.updated && n.odds>0){
+    const d = new Date(odds.updated);
+    const ts = d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+    parts.push(`Ratings from Kalshi odds as of <time datetime="${odds.updated}">${ts}</time>${odds.source==='live'?' (live)':''}`);
+    parts.push(`${n.odds} from odds`);
+  } else {
+    parts.push('Kalshi odds not loaded - showing hand-set ratings');
+  }
+  if(n.override) parts.push(`${n.override} manual override${n.override===1?'':'s'}`);
+  if(n.manual && n.odds>0) parts.push(`${n.manual} hand-rated (no market)`);
+  el.innerHTML = parts.join(' &middot; ') + (extra ? ' &middot; ' + extra : '');
+}
+
+function refreshLayout(odds, extra){
+  applyOdds(odds);
+  buildColumns();
+  render();
+  renderOddsNote(odds, extra);
+}
+
+/* ---------- Option A: live fetch in the browser ---------- */
+function toNum(v){ if(v===null||v===undefined||v==='') return null; const x = Number(v); return isNaN(x)?null:x; }
+function priceField(m, name){
+  const dollars = toNum(m[name+'_dollars']);
+  if(dollars!==null) return dollars;
+  const cents = toNum(m[name]);
+  return cents===null ? null : cents/100;
+}
+function marketPrice(m){
+  const bid = priceField(m,'yes_bid'), ask = priceField(m,'yes_ask'), last = priceField(m,'last_price');
+  if(bid>0 && ask>0 && ask<1 && ask>=bid && (ask-bid)<=ODDS_CONFIG.maxSpread) return {p:(bid+ask)/2, how:'mid'};
+  if(last>0) return {p:last, how:'last'};
+  if(bid>0 && ask>0 && ask<=1 && ask>=bid) return {p:(bid+ask)/2, how:'mid'};
+  return null;
+}
+function surname(name){
+  const parts = name.toLowerCase().replace(/[^a-z\s'-]/g,'').trim().split(/\s+/);
+  return parts[parts.length-1];
+}
+function sideOf(m, race){
+  const t = String(m.ticker||'').toUpperCase();
+  if(/-D$/.test(t)) return 'D';
+  if(/-R$/.test(t)) return 'R';
+  const sub = [m.yes_sub_title, m.subtitle].filter(Boolean).join(' ').toLowerCase();
+  for(const label of [sub, String(m.title||'').toLowerCase()]){
+    if(!label) continue;
+    if(/democrat/.test(label)) return 'D';
+    if(/republican/.test(label)) return 'R';
+    for(const c of race.cands){
+      const sn = surname(c.n);
+      if(sn.length>2 && new RegExp('\\b'+sn.replace(/[-']/g,'.')+'\\b').test(label)) return c.caucus || c.p;
+    }
+  }
+  return '?';
+}
+function dProbFromMarkets(markets, race){
+  let dSum=0, rSum=0, total=0, haveD=false, haveR=false, hows=new Set();
+  markets.forEach(m=>{
+    if(m.status && !['active','open'].includes(m.status)) return;
+    const pr = marketPrice(m); if(!pr) return;
+    const side = sideOf(m, race);
+    hows.add(pr.how); total += pr.p;
+    if(side==='D'){ dSum+=pr.p; haveD=true; }
+    else if(side==='R'){ rSum+=pr.p; haveR=true; }
+  });
+  let d = null;
+  if(haveD && haveR && total>0) d = dSum/total;
+  else if(haveD) d = dSum;
+  else if(haveR) d = 1 - rSum;
+  if(d===null) return null;
+  return {d: Math.max(0, Math.min(1, d)), how: [...hows].join('+')};
+}
+async function fetchJSON(url){
+  const ctl = new AbortController();
+  const timer = setTimeout(()=>ctl.abort(), ODDS_CONFIG.live.timeoutMs);
+  try{
+    const res = await fetch(url, {signal:ctl.signal, headers:{'Accept':'application/json'}});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
+  } finally { clearTimeout(timer); }
+}
+async function fetchRaceLive(race, series){
+  const base = ODDS_CONFIG.live.baseUrl.replace(/\/$/,'');
+  const data = await fetchJSON(`${base}/events?series_ticker=${encodeURIComponent(series)}&status=open&with_nested_markets=true&limit=50`);
+  const events = (data.events||[]).filter(e=>
+    String(e.title||'').toLowerCase().includes(race.state.toLowerCase()) &&
+    (/-26$/i.test(e.event_ticker||'') || /2026/.test(e.title||'') || /2026/.test(e.sub_title||'')));
+  if(!events.length) return null;
+  const ev = events[0];
+  const res = dProbFromMarkets(ev.markets||[], race);
+  return res ? {d:res.d, how:res.how, series, event:ev.event_ticker} : null;
+}
+async function loadLiveOdds(){
+  const out = {updated:new Date().toISOString(), source:'live', races:{}};
+  const jobs = RACES.map(r=>{
+    const snap = ODDS_DATA.races[r.id];
+    return {r, series:(snap && snap.series) || KALSHI_SERIES[r.id]};
+  }).filter(j=>j.series);
+  let ok=0, failed=0, i=0;
+  async function worker(){
+    while(i<jobs.length){
+      const j = jobs[i++];
+      try{
+        const res = await fetchRaceLive(j.r, j.series);
+        if(res){ out.races[j.r.id]=res; ok++; } else failed++;
+      }catch(e){ failed++; }
+    }
+  }
+  await Promise.all([1,2,3,4].map(worker));
+  return {out, ok, failed};
+}
+
+refreshLayout(ODDS_DATA);
+
+if(ODDS_CONFIG.live.enabled){
+  loadLiveOdds().then(({out, ok, failed})=>{
+    if(ok===0){
+      refreshLayout(ODDS_DATA, 'live fetch failed (CORS or network) - using last snapshot');
+      return;
+    }
+    // Races the live fetch missed keep their snapshot value.
+    Object.keys(ODDS_DATA.races).forEach(id=>{ if(!out.races[id]) out.races[id]=ODDS_DATA.races[id]; });
+    refreshLayout(out, failed ? `${failed} live fetch${failed===1?'':'es'} failed, snapshot used` : '');
+  }).catch(()=>refreshLayout(ODDS_DATA, 'live fetch failed - using last snapshot'));
+}
+</script>
