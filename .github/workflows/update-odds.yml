@@ -1,0 +1,35 @@
+name: Update Senate odds
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # every 3 hours (UTC), off the top of the hour
+  workflow_dispatch: {}       # "Run workflow" button for manual refreshes
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-odds
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pull Kalshi odds into the HTML
+        run: python scripts/update_odds.py --discover
+      - name: Commit if changed
+        run: |
+          if git diff --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add 2026_Senate_Tracker.html
+          git commit -m "Update Senate odds $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
